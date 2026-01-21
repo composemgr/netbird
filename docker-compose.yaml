@@ -1,0 +1,30 @@
+# nginx proxy address - http://172.17.0.1:33073
+
+name: netbird
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: netbirdio/netbird:latest
+    container_name: netbird-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+    ports:
+      - '172.17.0.1:33073:33073'
+    volumes:
+      - './rootfs/data/netbird:/data'
+    networks:
+      - netbird
+
+networks:
+  netbird:
+    name: netbird
+    external: false
