@@ -45,7 +45,7 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/netbird` - Data storage
+- `./volumes/data/netbird` - Data storage
 
 ## 🔍 Logging
 
