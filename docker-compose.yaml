@@ -22,6 +22,7 @@ services:
       AUTH_AUDIENCE: ${NETBIRD_AUTH_AUDIENCE:-netbird}
       AUTH_CLIENT_ID: ${NETBIRD_AUTH_CLIENT_ID:-netbird-client}
       AUTH_AUTHORITY: ${NETBIRD_AUTH_AUTHORITY:-https://${BASE_DOMAIN_NAME:-example.com}}
+      AUTH_SUPPORTED_SCOPES: ${NETBIRD_AUTH_SUPPORTED_SCOPES:-openid profile email offline_access api}
       USE_AUTH0: "false"
       NETBIRD_MGMT_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
       NETBIRD_MGMT_GRPC_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
