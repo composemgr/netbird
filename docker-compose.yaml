@@ -8,19 +8,70 @@ x-logging: &default-logging
   driver: json-file
 
 services:
-  app:
-    image: netbirdio/netbird:latest
-    container_name: netbird-app
+  dashboard:
+    image: netbirdio/dashboard:latest
+    container_name: netbird-dashboard
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      AUTH_AUDIENCE: ${NETBIRD_AUTH_AUDIENCE:-netbird}
+      AUTH_CLIENT_ID: ${NETBIRD_AUTH_CLIENT_ID:-netbird-client}
+      AUTH_AUTHORITY: ${NETBIRD_AUTH_AUTHORITY:-https://${BASE_DOMAIN_NAME:-example.com}}
+      USE_AUTH0: "false"
+      NETBIRD_MGMT_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
+      NETBIRD_MGMT_GRPC_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
     ports:
-      - '172.17.0.1:33073:33073'
+      - '172.17.0.1:33073:80'
+    networks:
+      - netbird
+
+  management:
+    image: netbirdio/management:latest
+    container_name: netbird-management
+    hostname: netbird-management
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
     volumes:
-      - './volumes/data/netbird:/data'
+      - './volumes/data/netbird/management:/var/lib/netbird'
+      - './volumes/config/netbird:/etc/netbird'
+    networks:
+      - netbird
+
+  signal:
+    image: netbirdio/signal:latest
+    container_name: netbird-signal
+    hostname: netbird-signal
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - './volumes/data/netbird/signal:/var/lib/netbird'
+    networks:
+      - netbird
+
+  relay:
+    image: netbirdio/relay:latest
+    container_name: netbird-relay
+    hostname: netbird-relay
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      NB_LOG_LEVEL: info
+      NB_LISTEN_ADDRESS: ":33080"
+      NB_EXPOSED_ADDRESS: rels://${BASE_DOMAIN_NAME:-example.com}:33080
+      NB_AUTH_SECRET: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
+    ports:
+      - '33080:33080'
     networks:
       - netbird
 
