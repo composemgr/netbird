@@ -17,6 +17,8 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-dashboard
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       AUTH_AUDIENCE: ${NETBIRD_AUTH_AUDIENCE:-netbird}
       AUTH_CLIENT_ID: ${NETBIRD_AUTH_CLIENT_ID:-netbird-client}
       AUTH_AUTHORITY: ${NETBIRD_AUTH_AUTHORITY:-https://${BASE_DOMAIN_NAME:-example.com}}
@@ -27,6 +29,24 @@ services:
       - '172.17.0.1:33073:80'
     networks:
       - netbird
+      - proxy
+      - cloudflare
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://netbird-dashboard:80'
+      - 'cloudflare.hostname=netbird.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.netbird-dashboard.entrypoints=http'
+      - 'traefik.http.routers.netbird-dashboard-secure.tls=true'
+      - 'traefik.http.routers.netbird-dashboard.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.netbird-dashboard-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.netbird-dashboard.middlewares=netbird-dashboard-https-redirect'
+      - 'traefik.http.routers.netbird-dashboard-secure.entrypoints=https'
+      - 'traefik.http.routers.netbird-dashboard-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.netbird-dashboard-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.netbird-dashboard-secure.service=netbird-dashboard'
+      - 'traefik.http.services.netbird-dashboard.loadbalancer.server.port=80'
 
   management:
     image: netbirdio/management:latest
@@ -37,6 +57,7 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-management
     volumes:
       - './volumes/data/netbird/management:/var/lib/netbird'
       - './volumes/config/netbird:/etc/netbird'
@@ -52,6 +73,7 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-signal
     volumes:
       - './volumes/data/netbird/signal:/var/lib/netbird'
     networks:
@@ -66,6 +88,8 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-relay
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       NB_LOG_LEVEL: info
       NB_LISTEN_ADDRESS: ":33080"
       NB_EXPOSED_ADDRESS: rels://${BASE_DOMAIN_NAME:-example.com}:33080
@@ -74,8 +98,30 @@ services:
       - '33080:33080'
     networks:
       - netbird
+      - proxy
+      - cloudflare
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://netbird-relay:33080'
+      - 'cloudflare.hostname=netbird.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.netbird-relay.entrypoints=http'
+      - 'traefik.http.routers.netbird-relay-secure.tls=true'
+      - 'traefik.http.routers.netbird-relay.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.netbird-relay-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.netbird-relay.middlewares=netbird-relay-https-redirect'
+      - 'traefik.http.routers.netbird-relay-secure.entrypoints=https'
+      - 'traefik.http.routers.netbird-relay-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.netbird-relay-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.netbird-relay-secure.service=netbird-relay'
+      - 'traefik.http.services.netbird-relay.loadbalancer.server.port=33080'
 
 networks:
   netbird:
     name: netbird
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
