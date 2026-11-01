@@ -1,4 +1,4 @@
-# nginx proxy address - http://172.17.0.1:33073
+# nginx proxy address - http://172.17.0.1:64266
 
 name: netbird
 x-logging: &default-logging
@@ -11,6 +11,7 @@ services:
   dashboard:
     image: netbirdio/dashboard:latest
     container_name: netbird-dashboard
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
@@ -19,6 +20,7 @@ services:
       TZ: ${TZ:-America/New_York}
       CONTAINER_NAME: netbird-dashboard
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      # Core Dashboard Configuration
       AUTH_AUDIENCE: ${NETBIRD_AUTH_AUDIENCE:-netbird}
       AUTH_CLIENT_ID: ${NETBIRD_AUTH_CLIENT_ID:-netbird-client}
       AUTH_AUTHORITY: ${NETBIRD_AUTH_AUTHORITY:-https://${BASE_DOMAIN_NAME:-example.com}}
@@ -27,31 +29,14 @@ services:
       NETBIRD_MGMT_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
       NETBIRD_MGMT_GRPC_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
     ports:
-      - '172.17.0.1:33073:80'
+      - '172.17.0.1:64266:80'
     networks:
       - netbird
-      - proxy
-      - cloudflare
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://netbird-dashboard:80'
-      - 'cloudflare.hostname=netbird.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.netbird-dashboard.entrypoints=http'
-      - 'traefik.http.routers.netbird-dashboard-secure.tls=true'
-      - 'traefik.http.routers.netbird-dashboard.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.netbird-dashboard-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.netbird-dashboard.middlewares=netbird-dashboard-https-redirect'
-      - 'traefik.http.routers.netbird-dashboard-secure.entrypoints=https'
-      - 'traefik.http.routers.netbird-dashboard-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.netbird-dashboard-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.netbird-dashboard-secure.service=netbird-dashboard'
-      - 'traefik.http.services.netbird-dashboard.loadbalancer.server.port=80'
 
   management:
     image: netbirdio/management:latest
     container_name: netbird-management
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: netbird-management
     restart: always
     pull_policy: always
@@ -68,6 +53,7 @@ services:
   signal:
     image: netbirdio/signal:latest
     container_name: netbird-signal
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: netbird-signal
     restart: always
     pull_policy: always
@@ -83,6 +69,7 @@ services:
   relay:
     image: netbirdio/relay:latest
     container_name: netbird-relay
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: netbird-relay
     restart: always
     pull_policy: always
@@ -93,36 +80,12 @@ services:
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       NB_LOG_LEVEL: info
       NB_LISTEN_ADDRESS: ":33080"
-      NB_EXPOSED_ADDRESS: rels://${BASE_DOMAIN_NAME:-example.com}:33080
+      NB_EXPOSED_ADDRESS: rels://${BASE_HOST_NAME:-$HOSTNAME}:33080
       NB_AUTH_SECRET: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
-    ports:
-      - '33080:33080'
     networks:
       - netbird
-      - proxy
-      - cloudflare
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://netbird-relay:33080'
-      - 'cloudflare.hostname=netbird.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.netbird-relay.entrypoints=http'
-      - 'traefik.http.routers.netbird-relay-secure.tls=true'
-      - 'traefik.http.routers.netbird-relay.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.netbird-relay-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.netbird-relay.middlewares=netbird-relay-https-redirect'
-      - 'traefik.http.routers.netbird-relay-secure.entrypoints=https'
-      - 'traefik.http.routers.netbird-relay-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.netbird-relay-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.netbird-relay-secure.service=netbird-relay'
-      - 'traefik.http.services.netbird-relay.loadbalancer.server.port=33080'
 
 networks:
   netbird:
     name: netbird
     external: false
-  proxy:
-    external: true
-  cloudflare:
-    external: true

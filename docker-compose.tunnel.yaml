@@ -1,0 +1,94 @@
+name: netbird
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  dashboard:
+    image: netbirdio/dashboard:latest
+    container_name: netbird-dashboard
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-dashboard
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      # Core Dashboard Configuration
+      AUTH_AUDIENCE: ${NETBIRD_AUTH_AUDIENCE:-netbird}
+      AUTH_CLIENT_ID: ${NETBIRD_AUTH_CLIENT_ID:-netbird-client}
+      AUTH_AUTHORITY: ${NETBIRD_AUTH_AUTHORITY:-https://${BASE_DOMAIN_NAME:-example.com}}
+      AUTH_SUPPORTED_SCOPES: ${NETBIRD_AUTH_SUPPORTED_SCOPES:-openid profile email offline_access api}
+      USE_AUTH0: "false"
+      NETBIRD_MGMT_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
+      NETBIRD_MGMT_GRPC_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
+    labels:
+      - 'cloudflare.enable=true'
+      - 'cloudflare.service=http://netbird-dashboard:80'
+      - 'cloudflare.hostname=${BASE_HOST_NAME:-$HOSTNAME}'
+    networks:
+      - netbird
+      - cloudflare
+
+  management:
+    image: netbirdio/management:latest
+    container_name: netbird-management
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: netbird-management
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-management
+    volumes:
+      - './volumes/data/netbird/management:/var/lib/netbird'
+      - './volumes/config/netbird:/etc/netbird'
+    networks:
+      - netbird
+
+  signal:
+    image: netbirdio/signal:latest
+    container_name: netbird-signal
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: netbird-signal
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-signal
+    volumes:
+      - './volumes/data/netbird/signal:/var/lib/netbird'
+    networks:
+      - netbird
+
+  relay:
+    image: netbirdio/relay:latest
+    container_name: netbird-relay
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: netbird-relay
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: netbird-relay
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      NB_LOG_LEVEL: info
+      NB_LISTEN_ADDRESS: ":33080"
+      NB_EXPOSED_ADDRESS: rels://${BASE_HOST_NAME:-$HOSTNAME}:33080
+      NB_AUTH_SECRET: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
+    networks:
+      - netbird
+
+networks:
+  netbird:
+    name: netbird
+    external: false
+  cloudflare:
+    external: true
