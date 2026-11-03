@@ -26,6 +26,12 @@ services:
       USE_AUTH0: "false"
       NETBIRD_MGMT_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
       NETBIRD_MGMT_GRPC_API_ENDPOINT: https://${BASE_DOMAIN_NAME:-example.com}:443
+    healthcheck:
+      test: ['CMD', 'curl', '-s', '-o', '/dev/null', '--max-time', '5', 'http://127.0.0.1:80/']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     labels:
       - 'cloudflare.enable=true'
       - 'cloudflare.service=http://netbird-dashboard:80'
